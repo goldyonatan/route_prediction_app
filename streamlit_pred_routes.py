@@ -118,7 +118,7 @@ def create_evaluation_histograms():
 
 # Main Streamlit app function
 def main():
-    file_id = "1zoebVIwSt0e0_SHBVtrnSFA1JzEmd0qr/view?usp=drive_link"  
+    file_id = "1zoebVIwSt0e0_SHBVtrnSFA1JzEmd0qr"  
     df = load_data_from_drive(file_id)
     st.title("Route Prediction Visualization")
     df.sort_values(by=['CYCLE_ID', 'HEAD_COLL_TIMS'], ascending=[True, True], inplace=True)
