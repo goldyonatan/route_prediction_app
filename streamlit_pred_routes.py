@@ -118,10 +118,9 @@ def create_evaluation_histograms():
 
 # Main Streamlit app function
 def main():
-    file_id = "df_sample.parquet"  
+    file_id = "1zoebVIwSt0e0_SHBVtrnSFA1JzEmd0qr/view?usp=drive_link"  
     df = load_data_from_drive(file_id)
     st.title("Route Prediction Visualization")
-    df = pd.read_parquet(r"C:\Users\goldy\Downloads\df_sample\df_sample.parquet")
     df.sort_values(by=['CYCLE_ID', 'HEAD_COLL_TIMS'], ascending=[True, True], inplace=True)
     cycle_ids = df['CYCLE_ID'].unique()
 
