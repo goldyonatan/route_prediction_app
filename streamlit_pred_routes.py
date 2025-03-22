@@ -9,6 +9,39 @@ import numpy as np
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime
 import branca.colormap as cm  # For gradient coloring
+import io
+import os
+import pandas as pd
+import streamlit as st
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+
+def load_data_from_drive(file_id):
+    # Load service account credentials from Streamlit secrets
+    credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
+    
+    # Build the Drive API client
+    drive_service = build('drive', 'v3', credentials=credentials)
+    
+    # Create a request to download the file
+    request = drive_service.files().get_media(fileId=file_id)
+    
+    # Use an in-memory bytes buffer for the file
+    file_buffer = io.BytesIO()
+    downloader = MediaIoBaseDownload(file_buffer, request)
+    
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+        st.write(f"Download {int(status.progress() * 100)}%.")
+
+    # Reset the buffer's position to the beginning
+    file_buffer.seek(0)
+    
+    # Read the Parquet file into a Pandas DataFrame
+    df = pd.read_parquet(file_buffer)
+    return df
 
 password = st.text_input("Enter Password:", type="password")
 if password != st.secrets["APP_PASSWORD"]:  # Store password in Secrets
@@ -85,6 +118,8 @@ def create_evaluation_histograms():
 
 # Main Streamlit app function
 def main():
+    file_id = "df_sample.parquet"  
+    df = load_data_from_drive(file_id)
     st.title("Route Prediction Visualization")
     df = pd.read_parquet(r"C:\Users\goldy\Downloads\df_sample\df_sample.parquet")
     df.sort_values(by=['CYCLE_ID', 'HEAD_COLL_TIMS'], ascending=[True, True], inplace=True)
