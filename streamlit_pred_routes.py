@@ -11,8 +11,6 @@ from datetime import datetime
 import branca.colormap as cm  # For gradient coloring
 import io
 import os
-import pandas as pd
-import streamlit as st
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -35,7 +33,7 @@ def load_data_from_drive(file_id):
     while not done:
         status, done = downloader.next_chunk()
         st.write(f"Download {int(status.progress() * 100)}%.")
-
+    
     # Reset the buffer's position to the beginning
     file_buffer.seek(0)
     
@@ -181,6 +179,7 @@ def main():
 
     gaps = "split" if any(osrm_timestamps[i+1] - osrm_timestamps[i] > 300 for i in range(len(osrm_timestamps)-1)) else "ignore"
     route = get_osrm_match_route(coordinates=osrm_coords, timestamps=osrm_timestamps, radiuses=radiuses, gaps=gaps, tidy=True)
+    
     if route:
         matched_distance = route['distance'] / 1000
         odo_distance = cycle_df['ODO_END'].iloc[0] - cycle_df['ODO_START'].iloc[0]
@@ -217,11 +216,6 @@ def main():
 
         folium_static(m)
 
-        if st.button("Next Cycle"):
-            st.session_state.cycle_index = (st.session_state.cycle_index + 1) % len(cycle_ids)
-        st.write("Press to view next cycle's route")
-
-        # Description above evaluation metrics
         st.markdown("""
         ### About the Prediction Process
         The predicted route uses OSRM's map matching to align GPS points to roads based on coordinates and timestamps. 
@@ -240,11 +234,17 @@ def main():
         - **Percentage of cycles with absolute difference ≤ 1 km:** 92.18%
         - **Percentage of cycles with relative difference ≤ 5%:** 94.99%
         """)
-
         st.markdown("### Distribution of Differences")
         st.write("The histograms below visualize the distribution of absolute and relative differences relative to the odometer.")
         fig = create_evaluation_histograms()
         st.pyplot(fig)
+    else:
+        st.write("Error: Could not find a matching segment for any coordinate.")
+
+    # Always show the "Next Cycle" button, regardless of route matching results
+    if st.button("Next Cycle"):
+        st.session_state.cycle_index = (st.session_state.cycle_index + 1) % len(cycle_ids)
+    st.write("Press to view next cycle's route")
 
 if __name__ == "__main__":
     main()
