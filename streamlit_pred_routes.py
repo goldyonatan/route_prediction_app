@@ -216,12 +216,27 @@ def main():
 
         folium_static(m)
 
+        # Next Cycle button placed just beneath the map with green styling
+        st.markdown("""
+        <style>
+        div.stButton > button {
+            color: white;
+            background-color: green;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 0.5em 1em;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        if st.button("Next Cycle", key="next_cycle"):
+            st.session_state.cycle_index = (st.session_state.cycle_index + 1) % len(cycle_ids)
+        st.write("Press to view next cycle's route")
+        
         st.markdown("""
         ### About the Prediction Process
         The predicted route uses OSRM's map matching to align GPS points to roads based on coordinates and timestamps. 
         The direct route is the shortest path between start and end points. Metrics compare predicted distances to odometer readings.
         """)
-
         st.subheader("Evaluation Metrics")
         st.markdown("""
         These metrics evaluate the accuracy of route predictions compared to odometer readings across all cycles:
@@ -240,11 +255,20 @@ def main():
         st.pyplot(fig)
     else:
         st.write("Error: Could not find a matching segment for any coordinate.")
-
-    # Always show the "Next Cycle" button, regardless of route matching results
-    if st.button("Next Cycle"):
-        st.session_state.cycle_index = (st.session_state.cycle_index + 1) % len(cycle_ids)
-    st.write("Press to view next cycle's route")
+        st.markdown("""
+        <style>
+        div.stButton > button {
+            color: white;
+            background-color: green;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 0.5em 1em;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        if st.button("Next Cycle", key="next_cycle_error"):
+            st.session_state.cycle_index = (st.session_state.cycle_index + 1) % len(cycle_ids)
+        st.write("Press to view next cycle's route")
 
 if __name__ == "__main__":
     main()
