@@ -84,9 +84,6 @@ def main():
     car_data = multi_trip_df[multi_trip_df['Car ID'] == selected_car_id].iloc[0]
     trip_ids = car_data['Trip ids']
 
-    # Filter data for the selected car
-    car_data = multi_trip_df[multi_trip_df['Vehicle model'] == selected_car].iloc[0]
-    trip_ids = car_data['Trip ids']
     trip_subset = df[df['CYCLE_ID'].isin(trip_ids)].sort_values('DATETIME_START')
 
     # Display trip sequence in a table
