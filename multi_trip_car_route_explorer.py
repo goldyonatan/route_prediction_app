@@ -87,7 +87,7 @@ def main():
     trip_subset = df[df['CYCLE_ID'].isin(trip_ids)].sort_values('DATETIME_START')
 
     # Display trip sequence in a table
-    st.subheader(f"Trip Sequence for {selected_car}")
+    st.subheader(f"Trip Sequence for {selected_car_id}")
     trip_table = trip_subset[['CYCLE_ID', 'DATETIME_START', 'DATETIME_END']].copy()
     trip_table['Trip Number'] = range(1, len(trip_table) + 1)
     trip_table = trip_table[['Trip Number', 'CYCLE_ID', 'DATETIME_START', 'DATETIME_END']]
