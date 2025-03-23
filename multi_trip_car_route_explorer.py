@@ -25,8 +25,7 @@ def load_data_from_drive(file_id):
         status, done = downloader.next_chunk()
         st.write(f"Download {int(status.progress() * 100)}%.")
     file_buffer.seek(0)
-    df = pd.read_parquet(file_buffer)
-    return df
+    return pd.read_parquet(file_buffer)
 
 def load_multi_trip_df_from_drive(file_id):
     credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
@@ -39,8 +38,7 @@ def load_multi_trip_df_from_drive(file_id):
         status, done = downloader.next_chunk()
         st.write(f"Download {int(status.progress() * 100)}%.")
     file_buffer.seek(0)
-    multi_trip_df = pd.read_pickle(file_buffer)
-    return multi_trip_df
+    return pd.read_pickle(file_buffer)
 
 # Function to get the matched route using OSRM match service
 def get_osrm_match_route(coordinates, timestamps, radiuses=None, gaps="ignore", tidy=True):
@@ -73,6 +71,17 @@ def main():
     df['DATETIME_START'] = pd.to_datetime(df['DATETIME_START'])
     df['DATETIME_END'] = pd.to_datetime(df['DATETIME_END'])
 
+    # Aggregate df by CYCLE_ID to create trip_df with one row per CYCLE_ID
+    trip_df = df.groupby('CYCLE_ID').agg({
+        'FAMILY_LABEL': 'first',
+        'DATETIME_START': 'first',
+        'DATETIME_END': 'first',
+        'ODO_START': 'first',
+        'ODO_END': 'first',
+        'geoindex_10_start': 'first',
+        'geoindex_10_end': 'first',
+    }).reset_index()
+
     multi_trip_file_id = "1D351PegNv7WPLnne3mSPuZTYBoYnB5KJ"
     multi_trip_df = load_multi_trip_df_from_drive(multi_trip_file_id)
 
@@ -101,11 +110,11 @@ def main():
     selected_model = selected_sequence['Vehicle model']
     st.subheader(f"Trips for Sequence {selected_sequence_id} (Model: {selected_model})")
 
-    # Get ordered trips for the selected sequence
+    # Get ordered trips for the selected sequence using trip_df
     trip_ids = selected_sequence['Trip ids']
-    trip_subset = df[df['CYCLE_ID'].isin(trip_ids)].sort_values('DATETIME_START')
+    trip_subset = trip_df[trip_df['CYCLE_ID'].isin(trip_ids)].sort_values('DATETIME_START')
 
-    # Display trip table
+    # Display trip table grouped by CYCLE_ID
     trip_table = trip_subset[[
         'CYCLE_ID', 'FAMILY_LABEL', 'ODO_START', 'ODO_END', 'DATETIME_START'
     ]].copy()
@@ -117,13 +126,16 @@ def main():
     trip_table['Datetime'] = trip_table['Datetime'].dt.strftime('%Y-%m-%d %H:%M:%S')
     st.table(trip_table)
 
-    # Dropdown for trip selection
+    # Dropdown for trip selection using grouped CYCLE_IDs
     trip_options = trip_subset['CYCLE_ID'].tolist()
-    selected_trip_id = st.selectbox("Select a Trip to View Route", options=trip_options, format_func=lambda x: f"Trip {trip_options.index(x) + 1} (ID: {x})")
+    selected_trip_id = st.selectbox("Select a Trip to View Route", options=trip_options, 
+                                    format_func=lambda x: f"Trip {trip_options.index(x) + 1} (ID: {x})")
 
-    # Display route for selected trip
+    # Display route for selected trip using all rows from df
     st.subheader(f"Route for Trip: {selected_trip_id}")
-    trip_data = df[df['CYCLE_ID'] == selected_trip_id].sort_values('HEAD_COLL_TIMS' if 'HEAD_COLL_TIMS' in df.columns else 'DATETIME_START')
+    trip_data = df[df['CYCLE_ID'] == selected_trip_id].sort_values(
+        'HEAD_COLL_TIMS' if 'HEAD_COLL_TIMS' in df.columns else 'DATETIME_START'
+    )
     
     osrm_coords = []
     osrm_timestamps = []
@@ -198,10 +210,12 @@ def main():
     else:
         st.write("No coordinates available for this trip.")
 
-    # Short explanation of how sequences are found
+    # Explanation
     st.markdown("""
-    ### How Sequences Are Found
-    Trip sequences are identified by connecting trips that share the same vehicle model, have consistent odometer readings (within ±5 km), follow in time, and start/end in nearby locations (same H3 resolution 5 area).
+    ### How This Works
+    - **Table**: Displays one row per `CYCLE_ID` for the selected sequence, showing the first recorded values for `Vehicle Model`, `ODO Start`, `ODO End`, and `Datetime`.
+    - **Trip Selection**: Allows you to pick a `CYCLE_ID` from the sequence to view its detailed route.
+    - **Route Visualization**: Uses all data points from `df` for the selected `CYCLE_ID` to plot the full trip path.
     """)
 
 if __name__ == "__main__":
