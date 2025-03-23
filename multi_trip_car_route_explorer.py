@@ -75,10 +75,14 @@ def main():
 
     multi_trip_file_id = "1D351PegNv7WPLnne3mSPuZTYBoYnB5KJ"
     multi_trip_df = load_multi_trip_df_from_drive(multi_trip_file_id)
+    
+    # Dropdown for car selection
+    car_options = multi_trip_df['Car ID'].unique()
+    selected_car_id = st.selectbox("Select a Car", car_options)
 
-    # Car selection
-    car_options = multi_trip_df['Vehicle model'].unique()
-    selected_car = st.selectbox("Select a Car", car_options)
+    # Filter data for the selected car
+    car_data = multi_trip_df[multi_trip_df['Car ID'] == selected_car_id].iloc[0]
+    trip_ids = car_data['Trip ids']
 
     # Filter data for the selected car
     car_data = multi_trip_df[multi_trip_df['Vehicle model'] == selected_car].iloc[0]
